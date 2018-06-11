@@ -30,9 +30,8 @@ namespace Microsoft.ML.Runtime.EntryPoints
         {
             public string LabelColumn { get; set; }
             public string NameColumn { get; set; }
-            public string ScoreColumn { get; set; }
-            public string[] StratColumn { get; set; }
             public string WeightColumn { get; set; }
+            public string GroupColumn { get; set; }
             public string FeatureColumn { get; set; }
 
             public EvaluatorSettings()
@@ -55,14 +54,12 @@ namespace Microsoft.ML.Runtime.EntryPoints
                 {
                     TrainerKinds.SignatureBinaryClassifierTrainer,
                     new TaskInformationBundle {
-                        TrainerFunctionName = "TrainBinary",
+                        TrainerFunctionName = "BinaryClassifier",
                         TrainerSignatureType = typeof(SignatureBinaryClassifierTrainer),
                         EvaluatorInput = settings => new Models.BinaryClassificationEvaluator
                         {
                             LabelColumn = settings.LabelColumn,
                             NameColumn = settings.NameColumn,
-                            ScoreColumn = settings.ScoreColumn,
-                            StratColumn = settings.StratColumn,
                             WeightColumn = settings.WeightColumn
                         },
                         EvaluatorOutput = () => new Models.BinaryClassificationEvaluator.Output()
@@ -71,14 +68,12 @@ namespace Microsoft.ML.Runtime.EntryPoints
                 {
                     TrainerKinds.SignatureMultiClassClassifierTrainer,
                     new TaskInformationBundle{
-                        TrainerFunctionName = "TrainMultiClass",
+                        TrainerFunctionName = "Classifier",
                         TrainerSignatureType = typeof(SignatureMultiClassClassifierTrainer),
                         EvaluatorInput = settings => new Models.ClassificationEvaluator
                         {
                             LabelColumn = settings.LabelColumn,
                             NameColumn = settings.NameColumn,
-                            ScoreColumn = settings.ScoreColumn,
-                            StratColumn = settings.StratColumn,
                             WeightColumn = settings.WeightColumn
                         },
                         EvaluatorOutput = () => new Models.ClassificationEvaluator.Output()
@@ -87,15 +82,14 @@ namespace Microsoft.ML.Runtime.EntryPoints
                 {
                     TrainerKinds.SignatureRankerTrainer,
                     new TaskInformationBundle {
-                        TrainerFunctionName = "TrainRanking",
+                        TrainerFunctionName = "Ranker",
                         TrainerSignatureType = typeof(SignatureRankerTrainer),
                         EvaluatorInput = settings => new Models.RankerEvaluator
                         {
                             LabelColumn = settings.LabelColumn,
                             NameColumn = settings.NameColumn,
-                            ScoreColumn = settings.ScoreColumn,
-                            StratColumn = settings.StratColumn,
-                            WeightColumn = settings.WeightColumn
+                            WeightColumn = settings.WeightColumn,
+                            GroupIdColumn = settings.GroupColumn
                         },
                         EvaluatorOutput = () => new Models.RankerEvaluator.Output()
                     }
@@ -103,14 +97,12 @@ namespace Microsoft.ML.Runtime.EntryPoints
                 {
                     TrainerKinds.SignatureRegressorTrainer,
                     new TaskInformationBundle{
-                        TrainerFunctionName = "TrainRegression",
+                        TrainerFunctionName = "Regressor",
                         TrainerSignatureType = typeof(SignatureRegressorTrainer),
                         EvaluatorInput = settings => new Models.RegressionEvaluator
                         {
                             LabelColumn = settings.LabelColumn,
                             NameColumn = settings.NameColumn,
-                            ScoreColumn = settings.ScoreColumn,
-                            StratColumn = settings.StratColumn,
                             WeightColumn = settings.WeightColumn
                         },
                         EvaluatorOutput = () => new Models.RegressionEvaluator.Output()
@@ -119,14 +111,12 @@ namespace Microsoft.ML.Runtime.EntryPoints
                 {
                     TrainerKinds.SignatureMultiOutputRegressorTrainer,
                     new TaskInformationBundle {
-                        TrainerFunctionName = "TrainMultiRegression",
+                        TrainerFunctionName = "MultiOutputRegressor",
                         TrainerSignatureType = typeof(SignatureMultiOutputRegressorTrainer),
                         EvaluatorInput = settings => new Models.MultiOutputRegressionEvaluator
                         {
                             LabelColumn = settings.LabelColumn,
                             NameColumn = settings.NameColumn,
-                            ScoreColumn = settings.ScoreColumn,
-                            StratColumn = settings.StratColumn,
                             WeightColumn = settings.WeightColumn,
                         },
                         EvaluatorOutput = () => new Models.MultiOutputRegressionEvaluator.Output()
@@ -135,14 +125,12 @@ namespace Microsoft.ML.Runtime.EntryPoints
                 {
                     TrainerKinds.SignatureAnomalyDetectorTrainer,
                     new TaskInformationBundle {
-                        TrainerFunctionName = "TrainAnomalyDetection",
+                        TrainerFunctionName = "AnomalyDetector",
                         TrainerSignatureType = typeof(SignatureAnomalyDetectorTrainer),
                         EvaluatorInput = settings => new Models.AnomalyDetectionEvaluator
                         {
                             LabelColumn = settings.LabelColumn,
                             NameColumn = settings.NameColumn,
-                            ScoreColumn = settings.ScoreColumn,
-                            StratColumn = settings.StratColumn,
                             WeightColumn = settings.WeightColumn
                         },
                         EvaluatorOutput = () => new Models.AnomalyDetectionEvaluator.Output()
@@ -151,14 +139,12 @@ namespace Microsoft.ML.Runtime.EntryPoints
                 {
                     TrainerKinds.SignatureClusteringTrainer,
                     new TaskInformationBundle {
-                        TrainerFunctionName = "TrainClustering",
+                        TrainerFunctionName = "Clusterer",
                         TrainerSignatureType = typeof(SignatureClusteringTrainer),
                         EvaluatorInput = settings => new Models.ClusterEvaluator
                         {
                             LabelColumn = settings.LabelColumn,
                             NameColumn = settings.NameColumn,
-                            ScoreColumn = settings.ScoreColumn,
-                            StratColumn = settings.StratColumn,
                             WeightColumn = settings.WeightColumn,
                             FeatureColumn = settings.FeatureColumn
                         },
@@ -186,13 +172,24 @@ namespace Microsoft.ML.Runtime.EntryPoints
         public static TrainerKinds[] SignatureTypesToTrainerKinds(IEnumerable<Type> sigTypes) =>
             sigTypes.Select(SignatureTypeToTrainerKind).ToArray();
 
-        public static string GetTrainerName(TrainerKinds kind) => TrainerKindDict[kind].TrainerFunctionName;
+        private static string GetTrainerName(TrainerKinds kind) => TrainerKindDict[kind].TrainerFunctionName;
 
         public static T TrainerKindApiValue<T>(TrainerKinds trainerKind)
         {
             if (Enum.GetName(typeof(TrainerKinds), trainerKind) is string name)
                 return (T)Enum.Parse(typeof(T), name);
             throw new Exception($"Could not interpret enum value: {trainerKind}");
+        }
+
+        public static bool IsTrainerOfKind(Type type, TrainerKinds trainerKind)
+        {
+            if (trainerKind != TrainerKinds.SignatureMultiClassClassifierTrainer && trainerKind != TrainerKinds.SignatureMultiOutputRegressorTrainer)
+                return type.Name.EndsWith(GetTrainerName(trainerKind));
+
+            if (trainerKind == TrainerKinds.SignatureMultiClassClassifierTrainer)
+                return type.Name.EndsWith(GetTrainerName(trainerKind)) && !type.Name.EndsWith(GetTrainerName(TrainerKinds.SignatureBinaryClassifierTrainer));
+
+            return type.Name.EndsWith(GetTrainerName(trainerKind)) && !type.Name.EndsWith(GetTrainerName(TrainerKinds.SignatureRegressorTrainer));
         }
     }
 }

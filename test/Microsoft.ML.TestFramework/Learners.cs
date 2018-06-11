@@ -374,6 +374,13 @@ namespace Microsoft.ML.Runtime.RunTests
             BaselineProgress = true,
         };
 
+        public static PredictorAndArgs BinaryClassificationGamTrainerDiskTranspose = new PredictorAndArgs
+        {
+            Trainer = new SubComponent("BinaryClassificationGamTrainer", "dt+"),
+            Tag = "BinaryClassificationGamTrainerDiskTranspose",
+            BaselineProgress = true,
+        };
+
         // New.
         public static PredictorAndArgs QuantileRegressionScorer = new PredictorAndArgs
         {
@@ -582,19 +589,18 @@ namespace Microsoft.ML.Runtime.RunTests
             Trainer = new SubComponent("OneClassSVM", "ker=PolynomialKernel {b=1}"),
         };
 
-        /*
         public static PredictorAndArgs PCAAnomalyDefault = new PredictorAndArgs
         {
-            Trainer = new SubComponent(RandomizedPcaTrainer.LoadNameValue),
+            Trainer = new SubComponent("pcaAnomaly"),
             Tag = "Default"
         };
 
         public static PredictorAndArgs PCAAnomalyNoNorm = new PredictorAndArgs
         {
-            Trainer = new SubComponent(RandomizedPcaTrainer.LoadNameValue),
+            Trainer = new SubComponent("pcaAnomaly"),
             MamlArgs = new[] { "norm=no" },
             Tag = "NoNorm"
-        };*/
+        };
 
         public static PredictorAndArgs LDSVMDefault = new PredictorAndArgs
         {

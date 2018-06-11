@@ -6,15 +6,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.ML.Runtime;
 using Microsoft.ML.Runtime.Api;
 using Microsoft.ML.Runtime.Core.Tests.UnitTests;
 using Microsoft.ML.Runtime.Data;
 using Microsoft.ML.Runtime.Data.IO;
 using Microsoft.ML.Runtime.EntryPoints;
 using Microsoft.ML.Runtime.EntryPoints.JsonUtils;
+using Microsoft.ML.Runtime.FastTree;
 using Microsoft.ML.Runtime.Internal.Utilities;
 using Microsoft.ML.Runtime.Learners;
+using Microsoft.ML.Runtime.PCA;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -33,7 +34,35 @@ namespace Microsoft.ML.Runtime.RunTests
         {
             var dataPath = GetDataPath("breast-cancer.txt");
             var inputFile = new SimpleFileHandle(Env, dataPath, false, false);
-            var dataView = ImportTextData.ImportText(Env, new ImportTextData.Input { InputFile = inputFile, CustomSchema = "col=Label:0 col=Features:TX:1-9" }).Data;
+            /*var dataView = ImportTextData.ImportText(Env, new ImportTextData.Input
+            { InputFile = inputFile, CustomSchema = "col=Label:0 col=Features:TX:1-9" }).Data;*/
+
+            var dataView = ImportTextData.TextLoader(Env, new ImportTextData.LoaderInput()
+            {
+                Arguments =
+                {
+                    SeparatorChars = new []{',' },
+                    HasHeader = true,
+                    Column = new[]
+                    {
+                        new TextLoader.Column()
+                        {
+                            Name = "Label",
+                            Source = new [] { new TextLoader.Range() { Min = 0, Max = 0} },
+                            Type = Runtime.Data.DataKind.Text
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "Features",
+                            Source = new [] { new TextLoader.Range() { Min = 1, Max = 9} },
+                            Type = Runtime.Data.DataKind.Text
+                        }
+                    }
+                },
+
+                InputFile = inputFile
+            }).Data;
 
             var splitOutput = TrainTestSplit.Split(Env, new TrainTestSplit.Input { Data = dataView, Fraction = 0.9f });
 
@@ -62,7 +91,44 @@ namespace Microsoft.ML.Runtime.RunTests
         {
             var dataPath = GetDataPath("breast-cancer.txt");
             var inputFile = new SimpleFileHandle(Env, dataPath, false, false);
-            var dataView = ImportTextData.ImportText(Env, new ImportTextData.Input { InputFile = inputFile, CustomSchema = "col=Label:0 col=F1:TX:1 col=F2:I4:2 col=Rest:3-9" }).Data;
+            var dataView = ImportTextData.TextLoader(Env, new ImportTextData.LoaderInput()
+            {
+                Arguments =
+                {
+                    HasHeader = true,
+                    Column = new[]
+                    {
+                        new TextLoader.Column()
+                        {
+                            Name = "Label",
+                            Source = new [] { new TextLoader.Range() { Min = 0, Max = 0} }
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "F1",
+                            Source = new [] { new TextLoader.Range() { Min = 1, Max = 1} },
+                            Type = Runtime.Data.DataKind.Text
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "F2",
+                            Source = new [] { new TextLoader.Range() { Min = 2, Max = 2} },
+                            Type = Runtime.Data.DataKind.I4
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "Rest",
+                            Source = new [] { new TextLoader.Range() { Min = 3, Max = 9} }
+                        }
+                    }
+                },
+
+                InputFile = inputFile
+            }).Data;
+
             dataView = Env.CreateTransform("Term{col=F1}", dataView);
             var result = FeatureCombiner.PrepareFeatures(Env, new FeatureCombiner.FeatureCombinerInput() { Data = dataView, Features = new[] { "F1", "F2", "Rest" } }).OutputData;
             var expected = Env.CreateTransform("Convert{col=F2 type=R4}", dataView);
@@ -82,7 +148,44 @@ namespace Microsoft.ML.Runtime.RunTests
         {
             var dataPath = GetDataPath("breast-cancer.txt");
             var inputFile = new SimpleFileHandle(Env, dataPath, false, false);
-            var dataView = ImportTextData.ImportText(Env, new ImportTextData.Input { InputFile = inputFile, CustomSchema = "col=Label:0 col=F1:TX:1 col=F2:I4:2 col=Rest:3-9" }).Data;
+            var dataView = ImportTextData.TextLoader(Env, new ImportTextData.LoaderInput()
+            {
+                Arguments =
+                {
+                    HasHeader = true,
+                    Column = new[]
+                    {
+                        new TextLoader.Column()
+                        {
+                            Name = "Label",
+                            Source = new [] { new TextLoader.Range() { Min = 0, Max = 0} }
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "F1",
+                            Source = new [] { new TextLoader.Range() { Min = 1, Max = 1} },
+                            Type = Runtime.Data.DataKind.Text
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "F2",
+                            Source = new [] { new TextLoader.Range() { Min = 2, Max = 2} },
+                            Type = Runtime.Data.DataKind.I4
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "Rest",
+                            Source = new [] { new TextLoader.Range() { Min = 3, Max = 9} }
+                        }
+                    }
+                },
+
+                InputFile = inputFile
+            }).Data;
+
             dataView = Env.CreateTransform("Term{col=F1}", dataView);
 
             var trainData = FeatureCombiner.PrepareFeatures(Env, new FeatureCombiner.FeatureCombinerInput() { Data = dataView, Features = new[] { "F1", "F2", "Rest" } });
@@ -105,7 +208,44 @@ namespace Microsoft.ML.Runtime.RunTests
         {
             var dataPath = GetDataPath("breast-cancer.txt");
             var inputFile = new SimpleFileHandle(Env, dataPath, false, false);
-            var dataView = ImportTextData.ImportText(Env, new ImportTextData.Input { InputFile = inputFile, CustomSchema = "col=Label:0 col=F1:TX:1 col=F2:I4:2 col=Rest:3-9" }).Data;
+            var dataView = ImportTextData.TextLoader(Env, new ImportTextData.LoaderInput()
+            {
+                Arguments =
+                {
+                    HasHeader = true,
+                    Column = new[]
+                    {
+                        new TextLoader.Column()
+                        {
+                            Name = "Label",
+                            Source = new [] { new TextLoader.Range() { Min = 0, Max = 0} },
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "F1",
+                            Source = new [] { new TextLoader.Range() { Min = 1, Max = 1} },
+                            Type = Runtime.Data.DataKind.Text
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "F2",
+                            Source = new [] { new TextLoader.Range() { Min = 2, Max = 2} },
+                            Type = Runtime.Data.DataKind.I4
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "Rest",
+                            Source = new [] { new TextLoader.Range() { Min = 3, Max = 9} }
+                        }
+                    }
+                },
+
+                InputFile = inputFile
+            }).Data;
+
             dataView = Env.CreateTransform("Term{col=F1}", dataView);
 
             var data1 = FeatureCombiner.PrepareFeatures(Env, new FeatureCombiner.FeatureCombinerInput() { Data = dataView, Features = new[] { "F1", "F2", "Rest" } });
@@ -120,7 +260,49 @@ namespace Microsoft.ML.Runtime.RunTests
         {
             var dataPath = GetDataPath("breast-cancer.txt");
             var inputFile = new SimpleFileHandle(Env, dataPath, false, false);
-            var dataView = ImportTextData.ImportText(Env, new ImportTextData.Input { InputFile = inputFile, CustomSchema = "col=Label:0 col=F1:TX:1 col=F2:I4:2 col=Rest:3-9" }).Data;
+            /*var dataView = ImportTextData.ImportText(Env, new ImportTextData.Input { InputFile = inputFile,
+                CustomSchema = "col=Label:0 col=F1:TX:1 col=F2:I4:2 col=Rest:3-9" }).Data;
+                */
+
+            var dataView = ImportTextData.TextLoader(Env, new ImportTextData.LoaderInput()
+            {
+                Arguments =
+                {
+                    SeparatorChars = new []{',' },
+                    HasHeader = true,
+                    Column = new[]
+                    {
+                        new TextLoader.Column()
+                        {
+                            Name = "Label",
+                            Source = new [] { new TextLoader.Range() { Min = 0, Max = 0} }
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "F1",
+                            Source = new [] { new TextLoader.Range() { Min = 1, Max = 1} },
+                            Type = Runtime.Data.DataKind.Text
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "F2",
+                            Source = new [] { new TextLoader.Range() { Min = 2, Max = 2} },
+                            Type = Runtime.Data.DataKind.I4
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "Rest",
+                            Source = new [] { new TextLoader.Range() { Min = 3, Max = 9} }
+                        }
+                    }
+                },
+
+                InputFile = inputFile
+            }).Data;
+
             dataView = Env.CreateTransform("Term{col=F1}", dataView);
 
             var cached1 = Cache.CacheData(Env, new Cache.CacheInput() { Data = dataView, Caching = Cache.CachingType.Memory });
@@ -305,7 +487,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {
                   'Nodes': [
                     {
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {
                         'InputFile': '$file1'
                       },
@@ -314,7 +496,7 @@ namespace Microsoft.ML.Runtime.RunTests
                       }
                     },
                     {
-                      'Name': 'Trainers.BinaryLogisticRegressor',
+                      'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                       'Inputs': {
                         'TrainingData': '$data1',
                         'NumThreads': 1
@@ -355,7 +537,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {{
                   'Nodes': [
                     {{
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {{
                         'InputFile': '$file1'
                       }},
@@ -364,7 +546,7 @@ namespace Microsoft.ML.Runtime.RunTests
                       }}
                     }},
                     {{
-                      'Name': 'Trainers.BinaryLogisticRegressor',
+                      'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                       'Inputs': {{
                         'TrainingData': '$data1',
                         'NumThreads': 1
@@ -512,7 +694,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {{
                   'Nodes': [
                     {{
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {{
                         'InputFile': '$file1'
                       }},
@@ -562,7 +744,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {{
                   'Nodes': [
                     {{
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {{
                         'InputFile': '$file1'
                       }},
@@ -607,7 +789,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {{
                   'Nodes': [
                     {{
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {{
                         'InputFile': '$file1'
                       }},
@@ -653,7 +835,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {{
                   'Nodes': [
                     {{
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {{
                         'InputFile': '$file1',
                         'CustomSchema': 'sep=comma col=Cat:TX:4'
@@ -729,15 +911,16 @@ namespace Microsoft.ML.Runtime.RunTests
         }
 
         private void RunTrainScoreEvaluate(string learner, string evaluator, string dataPath, string warningsPath, string overallMetricsPath,
-                    string instanceMetricsPath, string confusionMatrixPath = null)
+                    string instanceMetricsPath, string confusionMatrixPath = null, string loader = null)
         {
             string inputGraph = string.Format(@"
                 {{
                   'Nodes': [
                     {{
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {{
                         'InputFile': '$file'
+                        {8}
                       }},
                       'Outputs': {{
                         'Data': '$AllData'
@@ -797,7 +980,8 @@ namespace Microsoft.ML.Runtime.RunTests
                   }}
                 }}", learner, evaluator, EscapePath(dataPath), EscapePath(warningsPath), EscapePath(overallMetricsPath), EscapePath(instanceMetricsPath),
                 confusionMatrixPath != null ? ", 'ConfusionMatrix': '$ConfusionMatrix'" : "",
-                confusionMatrixPath != null ? string.Format(", 'ConfusionMatrix' : '{0}'", EscapePath(confusionMatrixPath)) : "");
+                confusionMatrixPath != null ? string.Format(", 'ConfusionMatrix' : '{0}'", EscapePath(confusionMatrixPath)) : "",
+                string.IsNullOrWhiteSpace(loader) ? "" : string.Format(",'CustomSchema': '{0}'", loader));
 
             var jsonPath = DeleteOutputPath("graph.json");
             File.WriteAllLines(jsonPath, new[] { inputGraph });
@@ -816,7 +1000,7 @@ namespace Microsoft.ML.Runtime.RunTests
             var instanceMetricsPath = DeleteOutputPath("instance.idv");
             var confusionMatrixPath = DeleteOutputPath("confusion.idv");
 
-            RunTrainScoreEvaluate("Trainers.BinaryLogisticRegressor", "Models.BinaryClassificationEvaluator", dataPath, warningsPath, overallMetricsPath, instanceMetricsPath, confusionMatrixPath);
+            RunTrainScoreEvaluate("Trainers.LogisticRegressionBinaryClassifier", "Models.BinaryClassificationEvaluator", dataPath, warningsPath, overallMetricsPath, instanceMetricsPath, confusionMatrixPath);
 
             using (var loader = new BinaryLoader(Env, new BinaryLoader.Arguments(), warningsPath))
                 Assert.Equal(1, CountRows(loader));
@@ -840,7 +1024,7 @@ namespace Microsoft.ML.Runtime.RunTests
             var instanceMetricsPath = DeleteOutputPath("instance.idv");
             var confusionMatrixPath = DeleteOutputPath("confusion.idv");
 
-            RunTrainScoreEvaluate("Trainers.LogisticRegressor", "Models.ClassificationEvaluator", dataPath, warningsPath, overallMetricsPath, instanceMetricsPath, confusionMatrixPath);
+            RunTrainScoreEvaluate("Trainers.LogisticRegressionClassifier", "Models.ClassificationEvaluator", dataPath, warningsPath, overallMetricsPath, instanceMetricsPath, confusionMatrixPath);
 
             using (var loader = new BinaryLoader(Env, new BinaryLoader.Arguments(), warningsPath))
                 Assert.Equal(0, CountRows(loader));
@@ -855,15 +1039,16 @@ namespace Microsoft.ML.Runtime.RunTests
                 Assert.Equal(3, CountRows(loader));
         }
 
-        [Fact(Skip = "Missing data set. See https://github.com/dotnet/machinelearning/issues/3")]
+        [Fact]
         public void EntryPointEvaluateRegression()
         {
-            var dataPath = GetDataPath("housing.txt");
+            var dataPath = GetDataPath(TestDatasets.winequality.trainFilename);
             var warningsPath = DeleteOutputPath("warnings.idv");
             var overallMetricsPath = DeleteOutputPath("overall.idv");
             var instanceMetricsPath = DeleteOutputPath("instance.idv");
 
-            RunTrainScoreEvaluate("Trainers.StochasticDualCoordinateAscentRegressor", "Models.RegressionEvaluator", dataPath, warningsPath, overallMetricsPath, instanceMetricsPath);
+            RunTrainScoreEvaluate("Trainers.StochasticDualCoordinateAscentRegressor", "Models.RegressionEvaluator",
+                dataPath, warningsPath, overallMetricsPath, instanceMetricsPath, loader: TestDatasets.winequality.loaderSettings);
 
             using (var loader = new BinaryLoader(Env, new BinaryLoader.Arguments(), warningsPath))
                 Assert.Equal(0, CountRows(loader));
@@ -872,7 +1057,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 Assert.Equal(1, CountRows(loader));
 
             using (var loader = new BinaryLoader(Env, new BinaryLoader.Arguments(), instanceMetricsPath))
-                Assert.Equal(104, CountRows(loader));
+                Assert.Equal(975, CountRows(loader));
         }
 
         [Fact]
@@ -887,22 +1072,22 @@ namespace Microsoft.ML.Runtime.RunTests
             TestEntryPointRoutine("iris.txt", "Trainers.StochasticDualCoordinateAscentClassifier");
         }
 
-        [Fact(Skip = "Missing data set. See https://github.com/dotnet/machinelearning/issues/3")]
+        [Fact()]
         public void EntryPointSDCARegression()
         {
-            TestEntryPointRoutine("housing.txt", "Trainers.StochasticDualCoordinateAscentRegressor");
+            TestEntryPointRoutine(TestDatasets.winequality.trainFilename, "Trainers.StochasticDualCoordinateAscentRegressor", loader: TestDatasets.winequality.loaderSettings);
         }
 
         [Fact]
         public void EntryPointLogisticRegressionMultiClass()
         {
-            TestEntryPointRoutine("iris.txt", "Trainers.LogisticRegressor");
+            TestEntryPointRoutine("iris.txt", "Trainers.LogisticRegressionClassifier");
         }
 
         [Fact]
         public void EntryPointPcaAnomaly()
         {
-            TestEntryPointRoutine("MNIST.Train.0-class.tiny.txt", "Trainers.PcaAnomalyDetector");
+            TestEntryPointRoutine("MNIST.Train.0-class.tiny.txt", "Trainers.PcaAnomalyDetector", "col=Features:R4:1-784");
         }
 
         [Fact]
@@ -961,10 +1146,10 @@ namespace Microsoft.ML.Runtime.RunTests
             TestEntryPointRoutine("breast-cancer.txt", "Trainers.StochasticGradientDescentBinaryClassifier");
         }
 
-        [Fact(Skip = "Missing data set. See https://github.com/dotnet/machinelearning/issues/3")]
+        [Fact()]
         public void EntryPointPoissonRegression()
         {
-            TestEntryPointRoutine("housing.txt", "Trainers.PoissonRegressor");
+            TestEntryPointRoutine(TestDatasets.winequality.trainFilename, "Trainers.PoissonRegressor", loader: TestDatasets.winequality.loaderSettings);
         }
 
         [Fact]
@@ -1214,7 +1399,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {{
                   'Nodes': [
                     {{
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {{
                         'InputFile': '$file1',
                         'CustomSchema': '{schema}'
@@ -1287,7 +1472,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {{
                   'Nodes': [
                     {{
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {{
                         'InputFile': '$file1'
                         {3}
@@ -1459,7 +1644,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {
                   'Nodes': [
                     {
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {
                         'InputFile': '$file'
                       },
@@ -1479,7 +1664,7 @@ namespace Microsoft.ML.Runtime.RunTests
                       }
                     },
                     {
-                      'Name': 'Trainers.BinaryLogisticRegressor',
+                      'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                       'Inputs': {
                         'TrainingData': '$data2',
                         'NumThreads': 1
@@ -1522,7 +1707,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {
                   'Nodes': [
                     {
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {
                         'InputFile': '$file'
                       },
@@ -1559,7 +1744,7 @@ namespace Microsoft.ML.Runtime.RunTests
                             }
                           },
                           {
-                            'Name': 'Trainers.BinaryLogisticRegressor',
+                            'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                             'Inputs': {
                               'TrainingData': '$data2',
                               'NumThreads': 1
@@ -1630,7 +1815,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {
                   'Nodes': [
                     {
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {
                         'InputFile': '$file'
                       },
@@ -1667,7 +1852,7 @@ namespace Microsoft.ML.Runtime.RunTests
                             }
                           },
                           {
-                            'Name': 'Trainers.BinaryLogisticRegressor',
+                            'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                             'Inputs': {
                               'TrainingData': '$data2',
                               'NumThreads': 1
@@ -1691,7 +1876,7 @@ namespace Microsoft.ML.Runtime.RunTests
                           'Data': '$data1'
                         },
                         'Outputs': {
-                          'Model': '$model'
+                          'PredictorModel': '$model'
                         }
                       },
                       'Outputs': {
@@ -1734,7 +1919,7 @@ namespace Microsoft.ML.Runtime.RunTests
         [Fact]
         public void EntryPointKMeans()
         {
-            TestEntryPointRoutine("Train-Tiny-28x28.txt", "Trainers.KMeansPlusPlusClusterer");
+            TestEntryPointRoutine("Train-Tiny-28x28.txt", "Trainers.KMeansPlusPlusClusterer", "col=Weight:R4:0 col=Features:R4:1-784", ",'InitAlgorithm':'KMeansPlusPlus'");
         }
 
         [Fact]
@@ -1744,7 +1929,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {
                   'Nodes': [
                     {
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {
                         'InputFile': '$file'
                       },
@@ -1782,7 +1967,7 @@ namespace Microsoft.ML.Runtime.RunTests
                         'TransformModel': '$transform',
                         'Nodes': [                          
                           {
-                            'Name': 'Trainers.BinaryLogisticRegressor',
+                            'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                             'Inputs': {
                               'TrainingData': '$data1',
                               'NumThreads': 1
@@ -1796,7 +1981,7 @@ namespace Microsoft.ML.Runtime.RunTests
                           'Data': '$data1'
                         },
                         'Outputs': {
-                          'Model': '$model'
+                          'PredictorModel': '$model'
                         }
                       },
                       'Outputs': {
@@ -1843,7 +2028,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {
                   'Nodes': [
                     {
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {
                         'InputFile': '$file'
                       },
@@ -1910,7 +2095,7 @@ namespace Microsoft.ML.Runtime.RunTests
                         'TransformModel': '$CombinedModel',
                         'Nodes': [                          
                           {
-                            'Name': 'Trainers.BinaryLogisticRegressor',
+                            'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                             'Inputs': {
                               'TrainingData': '$data1',
                               'NumThreads': 1
@@ -1924,7 +2109,7 @@ namespace Microsoft.ML.Runtime.RunTests
                           'Data': '$data1'
                         },
                         'Outputs': {
-                          'Model': '$model'
+                          'PredictorModel': '$model'
                         }
                       },
                       'Outputs': {
@@ -1957,7 +2142,7 @@ namespace Microsoft.ML.Runtime.RunTests
                           'Data': '$data4'
                         },
                         'Outputs': {
-                          'Model': '$model2'
+                          'PredictorModel': '$model2'
                         }
                       },
                       'Outputs': {
@@ -2019,7 +2204,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {
                   'Nodes': [
                     {
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {
                         'InputFile': '$file'
                       },
@@ -2076,7 +2261,7 @@ namespace Microsoft.ML.Runtime.RunTests
                         'NumFolds': 3,
                         'Nodes': [                          
                           {
-                            'Name': 'Trainers.BinaryLogisticRegressor',
+                            'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                             'Inputs': {
                               'TrainingData': '$data6',
                               'NumThreads': 1
@@ -2090,7 +2275,7 @@ namespace Microsoft.ML.Runtime.RunTests
                           'Data': '$data6'
                         },
                         'Outputs': {
-                          'Model': '$model'
+                          'PredictorModel': '$model'
                         }
                       },
                       'Outputs': {
@@ -2152,7 +2337,7 @@ namespace Microsoft.ML.Runtime.RunTests
                           'Data': '$data4'
                         },
                         'Outputs': {
-                          'Model': '$model2'
+                          'PredictorModel': '$model2'
                         }
                       },
                       'Outputs': {
@@ -2182,9 +2367,9 @@ namespace Microsoft.ML.Runtime.RunTests
             model = runner.GetOutput<IPredictorModel[]>("model2");
             Assert.NotNull(model[0]);
 
-            var metrics = runner.GetOutput<IDataView[]>("OverallMetrics");
-            Assert.NotNull(metrics[0]);
-            using (var cursor = metrics[0].GetRowCursor(col => true))
+            var metrics = runner.GetOutput<IDataView>("OverallMetrics");
+            Assert.NotNull(metrics);
+            using (var cursor = metrics.GetRowCursor(col => true))
             {
                 Assert.True(cursor.Schema.TryGetColumnIndex("AUC", out int aucCol));
                 var aucGetter = cursor.GetGetter<double>(aucCol);
@@ -2194,9 +2379,9 @@ namespace Microsoft.ML.Runtime.RunTests
                 Assert.True(auc > 0.99);
             }
 
-            metrics = runner.GetOutput<IDataView[]>("OverallMetrics2");
-            Assert.NotNull(metrics[0]);
-            using (var cursor = metrics[0].GetRowCursor(col => true))
+            metrics = runner.GetOutput<IDataView>("OverallMetrics2");
+            Assert.NotNull(metrics);
+            using (var cursor = metrics.GetRowCursor(col => true))
             {
                 Assert.True(cursor.Schema.TryGetColumnIndex("AUC", out int aucCol));
                 var aucGetter = cursor.GetGetter<double>(aucCol);
@@ -2214,7 +2399,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {
                   'Nodes': [
                     {
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {
                         'InputFile': '$file'
                       },
@@ -2251,7 +2436,7 @@ namespace Microsoft.ML.Runtime.RunTests
                             }
                           },
                           {
-                            'Name': 'Trainers.BinaryLogisticRegressor',
+                            'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                             'Inputs': {
                               'TrainingData': '$data2',
                               'NumThreads': 1
@@ -2302,7 +2487,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {
                   'Nodes': [
                     {
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {
                         'InputFile': '$file'
                       },
@@ -2322,7 +2507,7 @@ namespace Microsoft.ML.Runtime.RunTests
                       }
                     },
                     {
-                      'Name': 'Trainers.BinaryLogisticRegressor',
+                      'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                       'Inputs': {
                         'TrainingData': '$data2',
                         'NumThreads': 1
@@ -2368,7 +2553,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {
                   'Nodes': [
                     {
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'StageId': '5063dee8f19c4dd89a1fc3a9da5351a7',
                       'Inputs': {
                         'InputFile': '$file'
@@ -2391,7 +2576,7 @@ namespace Microsoft.ML.Runtime.RunTests
                       }
                     },
                     {
-                      'Name': 'Trainers.BinaryLogisticRegressor',
+                      'Name': 'Trainers.LogisticRegressionBinaryClassifier',
                       'Checkpoint': true,
                       'Cost': 3.14159,
                       'Inputs': {
@@ -2429,6 +2614,145 @@ namespace Microsoft.ML.Runtime.RunTests
         }
 
         [Fact]
+        public void EntryPointLinearPredictorSummary()
+        {
+            var dataPath = GetDataPath("breast-cancer-withheader.txt");
+            var inputFile = new SimpleFileHandle(Env, dataPath, false, false);
+
+            /*var dataView = ImportTextData.ImportText(Env, new ImportTextData.Input
+            { InputFile = inputFile, CustomSchema =  "header+ col=Label:0 col=Features:Num:1-9"*/
+            var dataView = ImportTextData.TextLoader(Env, new ImportTextData.LoaderInput()
+            {
+                Arguments =
+                {
+                    SeparatorChars = new []{'\t' },
+                    HasHeader = true,
+                    Column = new[]
+                    {
+                        new TextLoader.Column()
+                        {
+                            Name = "Label",
+                            Source = new [] { new TextLoader.Range() { Min = 0, Max = 0} },
+                        },
+
+                        new TextLoader.Column()
+                        {
+                            Name = "Features",
+                            Source = new [] { new TextLoader.Range() { Min = 1, Max = 9} },
+                            Type = Runtime.Data.DataKind.Num
+                        }
+                    }
+                },
+
+                InputFile = inputFile,
+            }).Data;
+
+            var lrInput = new LogisticRegression.Arguments
+            {
+                TrainingData = dataView,
+                NormalizeFeatures = NormalizeOption.Yes,
+                NumThreads = 1,
+                // REVIEW: this depends on MKL library which is not available
+                ShowTrainingStats = false 
+            };
+            var model = LogisticRegression.TrainBinary(Env, lrInput).PredictorModel;
+
+            var mcLrInput = new MulticlassLogisticRegression.Arguments
+            {
+                TrainingData = dataView,
+                NormalizeFeatures = NormalizeOption.Yes,
+                NumThreads = 1,
+                ShowTrainingStats = true
+            };
+            var mcModel = LogisticRegression.TrainMultiClass(Env, mcLrInput).PredictorModel;
+
+            var output = SummarizePredictor.Summarize(Env,
+                new SummarizePredictor.Input() { PredictorModel = model });
+
+            var mcOutput = SummarizePredictor.Summarize(Env,
+                new SummarizePredictor.Input() { PredictorModel = mcModel });
+
+            using (var ch = Env.Register("LinearPredictorSummary").Start("Save Data Views"))
+            {
+                var weights = DeleteOutputPath(@"../Common/EntryPoints", "lr-weights.txt");
+                var saver = Env.CreateSaver("Text");
+                using (var file = Env.CreateOutputFile(weights))
+                    DataSaverUtils.SaveDataView(ch, saver, output.Summary, file);
+
+                // REVIEW: enable this once MKL library is available
+                // var stats = DeleteOutputPath(@"../Common/EntryPoints", "lr-stats.txt");
+                // using (var file = Env.CreateOutputFile(stats))
+                //    DataSaverUtils.SaveDataView(ch, saver, output.Stats, file);
+
+                weights = DeleteOutputPath(@"../Common/EntryPoints", "mc-lr-weights.txt");
+                using (var file = Env.CreateOutputFile(weights))
+                    DataSaverUtils.SaveDataView(ch, saver, mcOutput.Summary, file);
+
+                var stats = DeleteOutputPath(@"../Common/EntryPoints", "mc-lr-stats.txt");
+                using (var file = Env.CreateOutputFile(stats))
+                    DataSaverUtils.SaveDataView(ch, saver, mcOutput.Stats, file);
+
+                ch.Done();
+            }
+
+            CheckEquality(@"../Common/EntryPoints", "lr-weights.txt");
+            // CheckEquality(@"../Common/EntryPoints", "lr-stats.txt");
+            CheckEquality(@"../Common/EntryPoints", "mc-lr-weights.txt");
+            CheckEquality(@"../Common/EntryPoints", "mc-lr-stats.txt");
+            Done();
+        }
+
+        [Fact]
+        public void EntryPointPcaPredictorSummary()
+        {
+            var dataPath = GetDataPath("MNIST.Train.0-class.tiny.txt");
+            using (var inputFile = new SimpleFileHandle(Env, dataPath, false, false))
+            {
+                var dataView = ImportTextData.TextLoader(Env, new ImportTextData.LoaderInput()
+                {
+                    Arguments =
+                {
+                    SeparatorChars = new []{'\t' },
+                    HasHeader = false,
+                    Column = new[]
+                    {
+                        new TextLoader.Column()
+                        {
+                            Name = "Features",
+                            Source = new [] { new TextLoader.Range() { Min = 1, Max = 784} },
+                            Type = Runtime.Data.DataKind.R4
+                        }
+                    }
+                },
+
+                    InputFile = inputFile,
+                }).Data;
+
+                var pcaInput = new RandomizedPcaTrainer.Arguments
+                {
+                    TrainingData = dataView,
+                };
+                var model = RandomizedPcaTrainer.TrainPcaAnomaly(Env, pcaInput).PredictorModel;
+
+                var output = SummarizePredictor.Summarize(Env,
+                    new SummarizePredictor.Input() { PredictorModel = model });
+
+                using (var ch = Env.Register("PcaPredictorSummary").Start("Save Data Views"))
+                {
+                    var weights = DeleteOutputPath(@"../Common/EntryPoints", "pca-weights.txt");
+                    var saver = Env.CreateSaver("Text");
+                    using (var file = Env.CreateOutputFile(weights))
+                        DataSaverUtils.SaveDataView(ch, saver, output.Summary, file);
+
+                    ch.Done();
+                }
+
+                CheckEquality(@"../Common/EntryPoints", "pca-weights.txt");
+                Done();
+            }
+        }
+
+        [Fact]
         public void EntryPointPrepareLabelConvertPredictedLabel()
         {
             var dataPath = GetDataPath("iris.data");
@@ -2437,7 +2761,7 @@ namespace Microsoft.ML.Runtime.RunTests
                 {{
                   'Nodes': [
                     {{
-                      'Name': 'Data.TextLoader',
+                      'Name': 'Data.CustomTextLoader',
                       'Inputs': {{
                         'InputFile': '$file1',
                         'CustomSchema': 'sep=comma col=Label:TX:4 col=Features:Num:0-3'
@@ -2457,7 +2781,7 @@ namespace Microsoft.ML.Runtime.RunTests
                       }}
                     }},
                     {{
-                      'Name': 'Trainers.LogisticRegressor',
+                      'Name': 'Trainers.LogisticRegressionClassifier',
                       'Inputs': {{
                         'Data': '$data2'
                       }},
@@ -2518,6 +2842,73 @@ namespace Microsoft.ML.Runtime.RunTests
                             || predictedLabel.EqualsStr("Iris-versicolor")
                             || predictedLabel.EqualsStr("Iris-virginica"));
                     }
+                }
+            }
+        }
+
+        [Fact]
+        public void EntryPointTreeLeafFeaturizer()
+        {
+            var dataPath = GetDataPath("adult.tiny.with-schema.txt");
+            var inputFile = new SimpleFileHandle(Env, dataPath, false, false);
+#pragma warning disable 0618
+            var dataView = ImportTextData.ImportText(Env, new ImportTextData.Input { InputFile = inputFile }).Data;
+#pragma warning restore 0618
+            var cat = Categorical.CatTransformDict(Env, new CategoricalTransform.Arguments()
+            {
+                Data = dataView,
+                Column = new[] { new CategoricalTransform.Column { Name = "Categories", Source = "Categories" } }
+            });
+            var concat = SchemaManipulation.ConcatColumns(Env, new ConcatTransform.Arguments()
+            {
+                Data = cat.OutputData,
+                Column = new[] { new ConcatTransform.Column { Name = "Features", Source = new[] { "Categories", "NumericFeatures" } } }
+            });
+
+            var fastTree = FastTree.FastTree.TrainBinary(Env, new FastTreeBinaryClassificationTrainer.Arguments
+            {
+                FeatureColumn = "Features",
+                NumTrees = 5,
+                NumLeaves = 4,
+                LabelColumn = DefaultColumnNames.Label,
+                TrainingData = concat.OutputData
+            });
+
+            var combine = ModelOperations.CombineModels(Env, new ModelOperations.PredictorModelInput()
+            {
+                PredictorModel = fastTree.PredictorModel,
+                TransformModels = new[] { cat.Model, concat.Model }
+            });
+
+            var treeLeaf = TreeFeaturize.Featurizer(Env, new TreeEnsembleFeaturizerTransform.ArgumentsForEntryPoint
+            {
+                Data = dataView,
+                PredictorModel = combine.PredictorModel
+            });
+
+            var view = treeLeaf.OutputData;
+            Assert.True(view.Schema.TryGetColumnIndex("Trees", out int treesCol));
+            Assert.True(view.Schema.TryGetColumnIndex("Leaves", out int leavesCol));
+            Assert.True(view.Schema.TryGetColumnIndex("Paths", out int pathsCol));
+            VBuffer<float> treeValues = default(VBuffer<float>);
+            VBuffer<float> leafIndicators = default(VBuffer<float>);
+            VBuffer<float> pathIndicators = default(VBuffer<float>);
+            using (var curs = view.GetRowCursor(c => c == treesCol || c == leavesCol || c == pathsCol))
+            {
+                var treesGetter = curs.GetGetter<VBuffer<float>>(treesCol);
+                var leavesGetter = curs.GetGetter<VBuffer<float>>(leavesCol);
+                var pathsGetter = curs.GetGetter<VBuffer<float>>(pathsCol);
+                while (curs.MoveNext())
+                {
+                    treesGetter(ref treeValues);
+                    leavesGetter(ref leafIndicators);
+                    pathsGetter(ref pathIndicators);
+
+                    Assert.Equal(5, treeValues.Length);
+                    Assert.Equal(5, treeValues.Count);
+                    Assert.Equal(20, leafIndicators.Length);
+                    Assert.Equal(5, leafIndicators.Count);
+                    Assert.Equal(15, pathIndicators.Length);
                 }
             }
         }
